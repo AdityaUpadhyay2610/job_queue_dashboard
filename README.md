@@ -4,15 +4,6 @@ A production-grade, full-stack **Job Queue Dashboard** built with **NestJS + SQL
 
 ---
 
-## 🌐 4. Submission & Deployment Details
-
-- **GitHub Repository Link:** [https://github.com/AdityaUpadhyay2610/job_queue_dashboard](https://github.com/AdityaUpadhyay2610/job_queue_dashboard) *(Public)*
-- **Live Backend / API URL:** [https://job-queue-dashboard-e5q0.onrender.com](https://job-queue-dashboard-e5q0.onrender.com)  
-  *(Test endpoint: [https://job-queue-dashboard-e5q0.onrender.com/jobs](https://job-queue-dashboard-e5q0.onrender.com/jobs))*
-- **Live Frontend URL:** [https://job-queue-dashboard-phi.vercel.app](https://job-queue-dashboard-phi.vercel.app) *(or your deployed Vercel URL)*
-
----
-
 ### 🧠 Assumptions, Trade-offs & Future Improvements
 
 #### 1. Assumptions Made:

@@ -176,6 +176,37 @@ job-queue-dashboard/
 
 ---
 
+## 🌟 Bonus: Production-Ready Improvement
+
+### Improvement Chosen: **Optimistic Concurrency Control (OCC) with Atomic Conditional Updates & Conflict Resolution**
+
+### 1. Why We Chose This:
+In real-world distributed systems and multi-operator operations dashboards, **race conditions** are one of the most critical threats to data integrity. When multiple background workers, automated schedulers, or human operators interact with the same job simultaneously, standard `read -> check -> write` operations suffer from **Time-of-Check to Time-of-Use (TOCTOU)** vulnerabilities. For example:
+- Operator A triggers a "Complete" action on a running job.
+- Operator B triggers a "Fail" action on the same running job at the exact same millisecond.
+- Without concurrency protection, the second write blindly overwrites the first write, creating ghost transitions or violating terminal state immutability.
+
+### 2. Engineering Decisions & Architecture:
+Instead of introducing heavyweight distributed locking dependencies (such as Redis/Redlock) which add network latency and operational overhead:
+1. **Atomic Conditional SQL Updates at the Repository Level**:
+   ```typescript
+   // Atomic update WHERE id = :id AND status = :currentStatus
+   const updateResult = await this.jobsRepository.update(
+     { id, status: currentStatus },
+     { status: newStatus }
+   );
+   ```
+2. **Deterministic Conflict Signaling (HTTP 409 Conflict)**:
+   - If `updateResult.affected === 0`, the backend immediately recognizes that the state changed between the read and write phases and raises a `ConflictException` (HTTP 409).
+3. **Resilient Frontend Self-Healing & User Feedback**:
+   - The React UI intercepts the 409 Conflict status code, displays a non-intrusive warning toast (*"Job status was modified by another request. Table re-synchronized."*), and immediately triggers an automatic re-fetch to restore accurate state without crashing or freezing the UI.
+
+### 3. Trade-offs & Production Viability:
+- **Pros**: Zero third-party infrastructure requirements (runs natively in SQL), microsecond-level execution speed, 100% race-condition prevention, and graceful degradation for end users.
+- **When to Upgrade**: In high-throughput distributed systems with thousands of workers contending for the same queue partition, this can be combined with a distributed message broker (BullMQ / RabbitMQ) with consumer pre-fetching.
+
+---
+
 ## 📋 API Endpoints Reference
 
 | Method | Endpoint | Description | Request Body / Query |

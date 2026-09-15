@@ -100,37 +100,57 @@ job-queue-dashboard/
 
 ---
 
-## 🎯 Architecture & State Machine
+## 🎯 Architecture & Core Questions FAQ
 
-### 1. Where are state transitions validated, and why?
-**Answer:** State transitions are validated **strictly on the backend service** (`backend/src/jobs/jobs.service.ts` inside `validateStatusTransition()`).
-
-* **Allowed State Flow:**
-  * `pending` ➔ `running`
-  * `running` ➔ `completed` OR `failed`
-  * `completed` / `failed` ➔ Terminal states (no further transitions allowed).
+### 1. Where should this rule be enforced?
+**Answer:** State transition rules must be enforced **strictly on the Backend Service layer** (`backend/src/jobs/jobs.service.ts` in `validateStatusTransition()`).
 
 * **Why on the Backend?**  
-  While the frontend disables illegal buttons for optimal UX, frontend validations can be easily bypassed via direct HTTP calls (Postman, curl, scripts). Enforcing state validation at the service level guarantees strict business logic adherence and database consistency.
+  The backend is the authoritative **Single Source of Truth**. Enforcing state validations at the server level guarantees data consistency, security, and integrity across all clients.
+* **Role of the Frontend:**  
+  The React UI conditionally disables/hides invalid action buttons for optimal **User Experience (UX)**, but never as the primary security or business validation layer.
 
 ---
 
-### 2. How are simultaneous clicks / race conditions handled?
-**Answer:**
-When two concurrent requests attempt to mutate the status of the exact same job simultaneously:
+### 2. What happens if someone bypasses the React application and calls the API directly?
+**Answer:** The request is **immediately intercepted and rejected** by the backend with an **HTTP 400 Bad Request** error.
 
-1. The service reads the job and confirms validity against its current state.
-2. An **atomic conditional update** is executed in the database:
-   ```typescript
-   const updateResult = await this.jobsRepository.update(
-     { id: job.id, status: currentStatus }, // WHERE id = :id AND status = :currentStatus
-     { status: newStatus }
-   );
-   ```
-3. If Request A updates `running` ➔ `completed`, Request B's conditional query finds `0` matching rows because `status` is no longer `running`.
-4. The service detects `updateResult.affected === 0` and throws a **`ConflictException` (HTTP 409)**:
-   > *"Race condition detected: Job status was modified by another request. Please refresh."*
-5. The frontend displays an informative warning toast and immediately re-synchronizes the latest table state.
+* If a user or script bypasses the UI and sends a `PATCH /jobs/:id/status` directly with an invalid transition (e.g., trying to jump directly from `pending` ➔ `completed`):
+  1. The request reaches `JobsService.validateStatusTransition()`.
+  2. The service detects the violation and throws `BadRequestException("Invalid transition: pending job can only transition to 'running'")`.
+  3. **Zero database writes occur**, preserving data integrity.
+
+---
+
+### 3. What happens when two requests arrive at nearly the same time?
+**Answer:** The **first request to execute succeeds**, and the **second request safely fails with an HTTP 409 Conflict** error without corrupting data.
+
+* When two concurrent requests try to transition the exact same running job (e.g., Request A clicks *Complete* and Request B clicks *Fail* at the exact same millisecond):
+  1. Both pass initial validation checks.
+  2. The backend performs an **atomic conditional update**:
+     ```typescript
+     const updateResult = await this.jobsRepository.update(
+       { id: job.id, status: currentStatus }, // WHERE id = :id AND status = :currentStatus
+       { status: newStatus }
+     );
+     ```
+  3. Request A updates the database (`running` ➔ `completed`).
+  4. When Request B's query executes, the row is no longer in `running` status, resulting in `updateResult.affected === 0`.
+  5. The backend detects this and throws a `ConflictException` (HTTP 409):
+     > *"Race condition detected: Job status was modified by another request. Please refresh."*
+  6. The frontend shows an informative warning toast and re-synchronizes the latest table state.
+
+---
+
+### 4. How would you prevent an invalid or inconsistent state?
+**Answer:** By applying a comprehensive **multi-layered validation and concurrency strategy**:
+
+| Layer | Technique | Implementation in this Project |
+| :--- | :--- | :--- |
+| **1. Request DTO Layer** | Strict Payload Validation | `class-validator` and global `ValidationPipe({ whitelist: true })` prevent unauthorized or malformed status values. |
+| **2. Business Logic Layer** | State Machine Transition Validation | `validateStatusTransition()` verifies that state moves strictly along `pending` ➔ `running` ➔ `completed` / `failed`, locking terminal states. |
+| **3. Concurrency Layer** | Atomic Conditional Updates (Optimistic Locking) | `UPDATE jobs SET status = :new WHERE id = :id AND status = :old` prevents race-condition overwrites. |
+| **4. Database Layer** | TypeORM Schema Constraints | Non-nullable status enum types and indexed columns in SQLite prevent corrupted states. |
 
 ---
 

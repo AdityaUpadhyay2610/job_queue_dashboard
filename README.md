@@ -1,77 +1,55 @@
 # 📦 Job Queue Dashboard
 
-A production-grade, full-stack **Job Queue Dashboard** built with **NestJS + SQLite (TypeORM)** on the backend and **React (TypeScript + Tailwind CSS + Vite)** on the frontend.
+A full-stack Job Queue Dashboard built with **NestJS (SQLite + TypeORM)** on the backend and **React (TypeScript + Tailwind CSS + Vite)** on the frontend.
 
 ---
 
-### 🧠 Assumptions, Trade-offs & Future Improvements
+## 🌐 Live Demo & Repository
 
-#### 1. Assumptions Made:
-- **Strict State Machine Workflow**: State transitions flow deterministically: `pending` ➔ `running` ➔ `completed` OR `failed`.
-- **Immutable Terminal States**: Once a job reaches `completed` or `failed`, it cannot be transitioned further or re-run (terminal states).
-- **Single-Node Execution**: For demonstration and evaluation purposes, an embedded SQLite database provides zero-configuration local and cloud persistence.
-
-#### 2. Trade-offs Made:
-- **SQLite vs. Managed PostgreSQL**: SQLite was chosen to make the repository lightweight, self-contained, and runnable out-of-the-box with zero database provisioning steps. On free-tier cloud servers (like Render), disk storage is ephemeral across server sleeps; in an enterprise environment, this would be backed by a managed PostgreSQL cluster (e.g. Neon or AWS RDS).
-- **Optimistic Concurrency vs. Distributed Locks**: We implemented atomic conditional SQL updates (`WHERE id = :id AND status = :currentStatus`) combined with HTTP 409 conflict handling. This avoids the latency and complexity of distributed Redis locking while providing complete race-condition safety.
-- **Polling / Re-fetch vs. WebSockets**: When mutations or conflicts occur, the React frontend immediately re-synchronizes the dataset. This keeps server resource footprint low without persistent WebSocket connection overhead.
-
-#### 3. Improvements with More Time:
-- **Asynchronous Worker Queue**: Integrate Redis with [BullMQ](https://bullmq.io/) to execute background processor worker pools for long-running tasks with automatic retries and exponential backoff.
-- **Real-Time Streaming**: Add WebSockets (via `@nestjs/websockets` / Socket.io) or Server-Sent Events (SSE) for live multi-user collaboration and instant status propagation across connected dashboards.
-- **Automated Test Suite**: Add comprehensive E2E integration tests with Playwright/Cypress and backend unit tests with Jest and Supertest.
-- **Pagination & Search**: Implement cursor-based pagination and full-text keyword search for large-scale datasets with tens of thousands of jobs.
-- **Audit History Log**: Track transition timestamp logs and user metadata for every state change.
-- **Auth**: In an enterprise environment, I would add authentication and role-based access control (RBAC) using JWTs and NestJS Guards so only authorized operators can trigger state transitions or delete jobs.
+- **GitHub Repository:** [https://github.com/AdityaUpadhyay2610/job_queue_dashboard](https://github.com/AdityaUpadhyay2610/job_queue_dashboard)
+- **Live Frontend:** [https://job-queue-dashboard-phi.vercel.app](https://job-queue-dashboard-phi.vercel.app)
+- **Live Backend API:** [https://job-queue-dashboard-e5q0.onrender.com](https://job-queue-dashboard-e5q0.onrender.com)
+  *(Test endpoint: [https://job-queue-dashboard-e5q0.onrender.com/jobs](https://job-queue-dashboard-e5q0.onrender.com/jobs))*
 
 ---
 
-## 🚀 Quick Start (Local Setup)
+## 🚀 How to Run Locally
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v18 or higher recommended)
-- `npm` (comes with Node.js)
+- Node.js (v18 or higher)
+- npm
 
----
-
-### 1. Backend Setup (NestJS + SQLite)
-
-Open a terminal and navigate to the `backend` directory:
+### 1. Start the Backend
 
 ```bash
 cd backend
 npm install
 npm run start:dev
 ```
+- Backend runs at `http://localhost:3000`
+- SQLite database (`jobs.db`) is created automatically in the `backend` folder.
 
-* The backend will start on **`http://localhost:3000`**
-* SQLite database file (`jobs.db`) is automatically created in the `backend` directory with tables synchronized.
+### 2. Start the Frontend
 
----
-
-### 2. Frontend Setup (React + TypeScript + Tailwind CSS)
-
-Open a second terminal and navigate to the `frontend` directory:
+In a new terminal:
 
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-
-* The frontend application will start on **`http://localhost:5173`**
+- Frontend runs at `http://localhost:5173`
 
 ---
 
 ## ✨ Features
 
-- **Real-Time Job Management**: Create, list, filter, transition, and delete background jobs.
-- **Strict State Machine**: Validates transitions (`pending` ➔ `running` ➔ `completed` / `failed`) on the backend to guarantee database integrity.
-- **Race Condition Prevention**: Employs atomic conditional queries (`WHERE id = :id AND status = :currentStatus`) preventing conflicting concurrent state mutations.
-- **Summary Metrics & KPI Cards**: Real-time totals for Total, Pending, Running, Completed, and Failed jobs.
-- **Dynamic Status Filtering**: Filter jobs seamlessly by status (`all`, `pending`, `running`, `completed`, `failed`).
-- **Interactive UI Feedback**: Instant toasts for successful updates, conflicts, and network errors.
-- **Modern Responsive Design**: Built with Tailwind CSS, Lucide icons, glassmorphism accents, and accessible table layouts.
+- **Job Management**: Create new jobs, view list, transition status, and delete jobs.
+- **State Machine Rules**: Follows strict lifecycle (`pending` ➔ `running` ➔ `completed` or `failed`).
+- **Conflict Handling**: Prevents race conditions when two actions happen simultaneously.
+- **Summary Metrics**: Overview count of total, pending, running, completed, and failed jobs.
+- **Filtering**: Filter jobs by status (`all`, `pending`, `running`, `completed`, `failed`).
+- **Feedback Toasts**: Clear alerts for successful actions, validation errors, and conflicts.
 
 ---
 
@@ -91,9 +69,7 @@ job-queue-dashboard/
 │   │   │   └── jobs.service.ts
 │   │   ├── app.module.ts
 │   │   └── main.ts
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── tsconfig.build.json
+│   └── package.json
 │
 ├── frontend/
 │   ├── src/
@@ -109,119 +85,114 @@ job-queue-dashboard/
 │   │   ├── types/
 │   │   │   └── job.ts
 │   │   ├── App.tsx
-│   │   ├── index.css
-│   │   ├── main.tsx
-│   │   └── vite-env.d.ts
-│   ├── index.html
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── vite.config.js
+│   │   └── main.tsx
+│   └── package.json
 │
 └── README.md
 ```
 
 ---
 
-## 🎯 Architecture & Core Questions FAQ
+## 🧠 Assumptions & Trade-offs
+
+### Assumptions
+1. **Job Lifecycle**: Jobs start as `pending`, move to `running`, and finish as either `completed` or `failed`.
+2. **Terminal States**: Once a job is `completed` or `failed`, it cannot be modified further.
+3. **Single App Deployment**: Built for single-server or demo evaluation using an embedded SQLite database.
+
+### Trade-offs
+1. **SQLite instead of PostgreSQL**: SQLite was chosen to make the project easy to download, run, and test immediately without having to set up a local database server or Docker container. For a production environment with multiple server instances, PostgreSQL would be the preferred choice.
+2. **Re-fetching on Action instead of WebSockets**: After a job status is updated or a conflict occurs, the frontend re-fetches the latest job list. This keeps the implementation straightforward and reliable without the extra complexity of maintaining WebSocket connections.
+
+### What I Would Add with More Time
+- **Background Worker Processing**: Integrate a queue processor like BullMQ with Redis to simulate real asynchronous job execution.
+- **Automated Tests**: Add unit tests for the backend service (`jobs.service.spec.ts`) and component tests for the React UI.
+- **Pagination & Search**: Add page numbers and a search bar for when the queue has hundreds of jobs.
+- **Authentication**: Add basic login/role management so only authorized users can trigger job actions.
+
+---
+
+## 🎯 Architecture Questions
 
 ### 1. Where should this rule be enforced?
-**Answer:** State transition rules must be enforced **strictly on the Backend Service layer** (`backend/src/jobs/jobs.service.ts` in `validateStatusTransition()`).
+**Answer:** State transition rules must always be enforced on the **backend** (in `JobsService.validateStatusTransition()`).
 
-* **Why on the Backend?**  
-  The backend is the authoritative **Single Source of Truth**. Enforcing state validations at the server level guarantees data consistency, security, and integrity across all clients.
-* **Role of the Frontend:**  
-  The React UI conditionally disables/hides invalid action buttons for optimal **User Experience (UX)**, but never as the primary security or business validation layer.
+- **Why backend?** The backend is the single source of truth. Users or external scripts can bypass the frontend and make direct HTTP requests. Validating on the backend guarantees that bad data never reaches the database.
+- **Frontend role:** The frontend disables invalid buttons (e.g. disabling "Complete" when a job is still `pending`) to provide good UX and prevent obvious user mistakes, but the backend is the true safety check.
 
 ---
 
 ### 2. What happens if someone bypasses the React application and calls the API directly?
-**Answer:** The request is **immediately intercepted and rejected** by the backend with an **HTTP 400 Bad Request** error.
+**Answer:** The request is rejected with an **HTTP 400 Bad Request** error.
 
-* If a user or script bypasses the UI and sends a `PATCH /jobs/:id/status` directly with an invalid transition (e.g., trying to jump directly from `pending` ➔ `completed`):
-  1. The request reaches `JobsService.validateStatusTransition()`.
-  2. The service detects the violation and throws `BadRequestException("Invalid transition: pending job can only transition to 'running'")`.
-  3. **Zero database writes occur**, preserving data integrity.
+- If an API request tries an invalid transition (like jumping from `pending` directly to `completed`), the backend service catches it before running any update query:
+  ```typescript
+  if (currentStatus === 'pending' && newStatus !== 'running') {
+    throw new BadRequestException("Invalid transition: pending job can only transition to 'running'");
+  }
+  ```
+- No database changes happen, and the client receives a clear error message.
 
 ---
 
-### 3. What happens when two requests arrive at nearly the same time?
-**Answer:** The **first request to execute succeeds**, and the **second request safely fails with an HTTP 409 Conflict** error without corrupting data.
+### 3. What happens when two requests arrive at nearly the same time? (Race Conditions)
+**Answer:** The first request succeeds, and the second request returns an **HTTP 409 Conflict** error.
 
-* When two concurrent requests try to transition the exact same running job (e.g., Request A clicks *Complete* and Request B clicks *Fail* at the exact same millisecond):
-  1. Both pass initial validation checks.
-  2. The backend performs an **atomic conditional update**:
+- When two requests try to update the same running job at the exact same moment (for example, one clicks *Complete* and another clicks *Fail*):
+  1. The backend uses a conditional SQL update:
      ```typescript
      const updateResult = await this.jobsRepository.update(
-       { id: job.id, status: currentStatus }, // WHERE id = :id AND status = :currentStatus
+       { id, status: currentStatus }, // checks if status is still what we read
        { status: newStatus }
      );
      ```
-  3. Request A updates the database (`running` ➔ `completed`).
-  4. When Request B's query executes, the row is no longer in `running` status, resulting in `updateResult.affected === 0`.
-  5. The backend detects this and throws a `ConflictException` (HTTP 409):
-     > *"Race condition detected: Job status was modified by another request. Please refresh."*
-  6. The frontend shows an informative warning toast and re-synchronizes the latest table state.
+  2. The first request updates the row (`running` ➔ `completed`).
+  3. The second request runs its query, but since the status is no longer `running`, it affects `0` rows.
+  4. The backend detects `affected === 0` and throws a `ConflictException` (HTTP 409).
+  5. The React frontend shows a friendly warning toast and re-fetches the job table so the user sees the latest data.
 
 ---
 
 ### 4. How would you prevent an invalid or inconsistent state?
-**Answer:** By applying a comprehensive **multi-layered validation and concurrency strategy**:
+**Answer:** By applying validation checks at every layer:
 
-| Layer | Technique | Implementation in this Project |
-| :--- | :--- | :--- |
-| **1. Request DTO Layer** | Strict Payload Validation | `class-validator` and global `ValidationPipe({ whitelist: true })` prevent unauthorized or malformed status values. |
-| **2. Business Logic Layer** | State Machine Transition Validation | `validateStatusTransition()` verifies that state moves strictly along `pending` ➔ `running` ➔ `completed` / `failed`, locking terminal states. |
-| **3. Concurrency Layer** | Atomic Conditional Updates (Optimistic Locking) | `UPDATE jobs SET status = :new WHERE id = :id AND status = :old` prevents race-condition overwrites. |
-| **4. Database Layer** | TypeORM Schema Constraints | Non-nullable status enum types and indexed columns in SQLite prevent corrupted states. |
+1. **DTO Validation**: Using `class-validator` to ensure required fields (`title`, `type`, `status`) are valid strings and not empty.
+2. **Service Validation**: Checking current status vs target status before allowing transitions.
+3. **Safe Updates**: Updating conditionally (`WHERE id = :id AND status = :currentStatus`) so concurrent requests don't overwrite each other.
+4. **Database Schema**: Using SQLite column definitions to ensure required fields are not nullable.
 
 ---
 
 ## 🌟 Bonus: Production-Ready Improvement
 
-### Improvement Chosen: **Optimistic Concurrency Control (OCC) with Atomic Conditional Updates & Conflict Resolution**
+### Improvement Chosen: **Safe Concurrent Updates & Conflict Recovery**
 
-### 1. Why We Chose This:
-In real-world distributed systems and multi-operator operations dashboards, **race conditions** are one of the most critical threats to data integrity. When multiple background workers, automated schedulers, or human operators interact with the same job simultaneously, standard `read -> check -> write` operations suffer from **Time-of-Check to Time-of-Use (TOCTOU)** vulnerabilities. For example:
-- Operator A triggers a "Complete" action on a running job.
-- Operator B triggers a "Fail" action on the same running job at the exact same millisecond.
-- Without concurrency protection, the second write blindly overwrites the first write, creating ghost transitions or violating terminal state immutability.
+### Why I chose this:
+In a real production environment, multiple team members or automated processes might view and manage the dashboard at the same time. If two people click different actions on the same job simultaneously, a standard update could silently overwrite the earlier action without anyone noticing.
 
-### 2. Engineering Decisions & Architecture:
-Instead of introducing heavyweight distributed locking dependencies (such as Redis/Redlock) which add network latency and operational overhead:
-1. **Atomic Conditional SQL Updates at the Repository Level**:
-   ```typescript
-   // Atomic update WHERE id = :id AND status = :currentStatus
-   const updateResult = await this.jobsRepository.update(
-     { id, status: currentStatus },
-     { status: newStatus }
-   );
-   ```
-2. **Deterministic Conflict Signaling (HTTP 409 Conflict)**:
-   - If `updateResult.affected === 0`, the backend immediately recognizes that the state changed between the read and write phases and raises a `ConflictException` (HTTP 409).
-3. **Resilient Frontend Self-Healing & User Feedback**:
-   - The React UI intercepts the 409 Conflict status code, displays a non-intrusive warning toast (*"Job status was modified by another request. Table re-synchronized."*), and immediately triggers an automatic re-fetch to restore accurate state without crashing or freezing the UI.
+### How it works:
+1. **Backend**: Instead of doing `save()`, the service runs a conditional update that verifies the job's current status in the database matches what was loaded when the user viewed it. If it changed in the meantime, it returns a `409 Conflict`.
+2. **Frontend**: When the React app receives a 409 status code, it displays an informative toast (`"Job status was modified by another request. Table re-synchronized."`) and automatically re-fetches the job list so the UI stays accurate.
 
-### 3. Trade-offs & Production Viability:
-- **Pros**: Zero third-party infrastructure requirements (runs natively in SQL), microsecond-level execution speed, 100% race-condition prevention, and graceful degradation for end users.
-- **When to Upgrade**: In high-throughput distributed systems with thousands of workers contending for the same queue partition, this can be combined with a distributed message broker (BullMQ / RabbitMQ) with consumer pre-fetching.
+This provides a simple, reliable way to prevent race conditions without needing extra infrastructure like Redis locks.
 
 ---
 
 ## 📋 API Endpoints Reference
 
-| Method | Endpoint | Description | Request Body / Query |
+| Method | Endpoint | Description | Request Body |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/jobs` | Create a new job | `{"title": "Job Title", "description": "Optional"}` |
+| `POST` | `/jobs` | Create a new job | `{"title": "Job Title", "type": "Email"}` |
 | `GET` | `/jobs` | Get all jobs (newest first) | None |
-| `GET` | `/jobs?status=:status` | Filter jobs by status | Query param `?status=pending` (or running, completed, failed) |
+| `GET` | `/jobs?status=:status` | Filter jobs by status | None |
 | `GET` | `/jobs/:id` | Get details for a single job | None |
-| `PATCH` | `/jobs/:id/status` | Transition job status | `{"status": "running"}` |
+| `PATCH` | `/jobs/:id/status` | Update job status | `{"status": "running"}` |
 | `DELETE` | `/jobs/:id` | Delete a job | None |
 
 ---
 
 ## 🛠 Tech Stack
 
-- **Backend:** [NestJS](https://nestjs.com/) (Node.js framework), [TypeORM](https://typeorm.io/), [SQLite3](https://www.sqlite.org/), `class-validator`
-- **Frontend:** [React 18](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Tailwind CSS](https://tailwindcss.com/), [Vite](https://vitejs.dev/), [Lucide React](https://lucide.dev/)
-- **Deployment:** Render (Backend Web Service) + Vercel (Frontend Static Hosting)
+- **Backend:** NestJS, TypeORM, SQLite, class-validator
+- **Frontend:** React, TypeScript, Vite, Tailwind CSS, Lucide React
+- **Deployment:** Render (Backend) + Vercel (Frontend)

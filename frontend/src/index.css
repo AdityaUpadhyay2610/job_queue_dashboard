@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #f8fafc;
+    background-image: 
+      linear-gradient(to right, rgba(226, 232, 240, 0.45) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(226, 232, 240, 0.45) 1px, transparent 1px);
+    background-size: 24px 24px;
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  }
+}
+
+@keyframes pulseGreen {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.pulse-animation {
+  animation: pulseGreen 2s infinite;
+}

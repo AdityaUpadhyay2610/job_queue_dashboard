@@ -4,15 +4,6 @@ A full-stack Job Queue Dashboard built with **NestJS (SQLite + TypeORM)** on the
 
 ---
 
-## 🌐 Live Demo & Repository
-
-- **GitHub Repository:** [https://github.com/AdityaUpadhyay2610/job_queue_dashboard](https://github.com/AdityaUpadhyay2610/job_queue_dashboard)
-- **Live Frontend:** [https://job-queue-dashboard-phi.vercel.app](https://job-queue-dashboard-phi.vercel.app)
-- **Live Backend API:** [https://job-queue-dashboard-e5q0.onrender.com](https://job-queue-dashboard-e5q0.onrender.com)
-  *(Test endpoint: [https://job-queue-dashboard-e5q0.onrender.com/jobs](https://job-queue-dashboard-e5q0.onrender.com/jobs))*
-
----
-
 ## 🚀 How to Run Locally
 
 ### Prerequisites

@@ -4,6 +4,36 @@ A production-grade, full-stack **Job Queue Dashboard** built with **NestJS + SQL
 
 ---
 
+## 🌐 4. Submission & Deployment Details
+
+- **GitHub Repository Link:** [https://github.com/AdityaUpadhyay2610/job_queue_dashboard](https://github.com/AdityaUpadhyay2610/job_queue_dashboard) *(Public)*
+- **Live Backend / API URL:** [https://job-queue-dashboard-e5q0.onrender.com](https://job-queue-dashboard-e5q0.onrender.com)  
+  *(Test endpoint: [https://job-queue-dashboard-e5q0.onrender.com/jobs](https://job-queue-dashboard-e5q0.onrender.com/jobs))*
+- **Live Frontend URL:** [https://job-queue-dashboard-phi.vercel.app](https://job-queue-dashboard-phi.vercel.app) *(or your deployed Vercel URL)*
+
+---
+
+### 🧠 Assumptions, Trade-offs & Future Improvements
+
+#### 1. Assumptions Made:
+- **Strict State Machine Workflow**: State transitions flow deterministically: `pending` ➔ `running` ➔ `completed` OR `failed`.
+- **Immutable Terminal States**: Once a job reaches `completed` or `failed`, it cannot be transitioned further or re-run (terminal states).
+- **Single-Node Execution**: For demonstration and evaluation purposes, an embedded SQLite database provides zero-configuration local and cloud persistence.
+
+#### 2. Trade-offs Made:
+- **SQLite vs. Managed PostgreSQL**: SQLite was chosen to make the repository lightweight, self-contained, and runnable out-of-the-box with zero database provisioning steps. On free-tier cloud servers (like Render), disk storage is ephemeral across server sleeps; in an enterprise environment, this would be backed by a managed PostgreSQL cluster (e.g. Neon or AWS RDS).
+- **Optimistic Concurrency vs. Distributed Locks**: We implemented atomic conditional SQL updates (`WHERE id = :id AND status = :currentStatus`) combined with HTTP 409 conflict handling. This avoids the latency and complexity of distributed Redis locking while providing complete race-condition safety.
+- **Polling / Re-fetch vs. WebSockets**: When mutations or conflicts occur, the React frontend immediately re-synchronizes the dataset. This keeps server resource footprint low without persistent WebSocket connection overhead.
+
+#### 3. Improvements with More Time:
+- **Asynchronous Worker Queue**: Integrate Redis with [BullMQ](https://bullmq.io/) to execute background processor worker pools for long-running tasks with automatic retries and exponential backoff.
+- **Real-Time Streaming**: Add WebSockets (via `@nestjs/websockets` / Socket.io) or Server-Sent Events (SSE) for live multi-user collaboration and instant status propagation across connected dashboards.
+- **Automated Test Suite**: Add comprehensive E2E integration tests with Playwright/Cypress and backend unit tests with Jest and Supertest.
+- **Pagination & Search**: Implement cursor-based pagination and full-text keyword search for large-scale datasets with tens of thousands of jobs.
+- **Audit History Log**: Track transition timestamp logs and user metadata for every state change.
+
+---
+
 ## 🚀 Quick Start (Local Setup)
 
 ### Prerequisites

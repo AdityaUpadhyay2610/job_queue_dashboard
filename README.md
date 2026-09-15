@@ -22,6 +22,7 @@ A production-grade, full-stack **Job Queue Dashboard** built with **NestJS + SQL
 - **Automated Test Suite**: Add comprehensive E2E integration tests with Playwright/Cypress and backend unit tests with Jest and Supertest.
 - **Pagination & Search**: Implement cursor-based pagination and full-text keyword search for large-scale datasets with tens of thousands of jobs.
 - **Audit History Log**: Track transition timestamp logs and user metadata for every state change.
+- **Auth**: In an enterprise environment, I would add authentication and role-based access control (RBAC) using JWTs and NestJS Guards so only authorized operators can trigger state transitions or delete jobs.
 
 ---
 
